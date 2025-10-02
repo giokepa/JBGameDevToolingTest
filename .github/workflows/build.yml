@@ -3,10 +3,10 @@ name: Build .NET 9 EXE
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build:
