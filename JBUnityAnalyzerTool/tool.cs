@@ -102,6 +102,7 @@ namespace JBUnityAnalyzerTool
         private static async Task ProcessSceneFile(string sceneFile, string outputPath,
             ConcurrentDictionary<string, string> scriptGuids, ConcurrentDictionary<string, bool> usedScripts)
         {
+            // start loading YAML content
             string sceneContent = await File.ReadAllTextAsync(sceneFile);
             var yaml = new YamlStream();
             yaml.Load(new StringReader(sceneContent));
@@ -110,6 +111,7 @@ namespace JBUnityAnalyzerTool
             var transforms = new Dictionary<string, Transform>();
             var components = new List<Component>();
 
+            // start parsing YAML documents
             foreach (var document in yaml.Documents)
             {
                 if (!(document.RootNode is YamlMappingNode rootNode) ||
@@ -119,6 +121,7 @@ namespace JBUnityAnalyzerTool
                 string? objectType = ((YamlScalarNode)rootNode.Children.First().Key).Value;
                 var properties = (YamlMappingNode)rootNode.Children.First().Value;
 
+                // categorizing each object type
                 switch (objectType)
                 {
                     case "GameObject":
@@ -130,6 +133,7 @@ namespace JBUnityAnalyzerTool
                     case "MonoBehaviour":
                         components.Add(ParseComponent(properties));
                         break;
+                    // more cases can be added here if needed
                 }
             }
 
@@ -198,6 +202,7 @@ namespace JBUnityAnalyzerTool
             };
         }
 
+        // normalize names for comparison (if this was not here, some of the scripts would still be marked as unused)
         private static string NormalizeName(string name)
         {
             if (string.IsNullOrEmpty(name)) return name;
@@ -209,6 +214,7 @@ namespace JBUnityAnalyzerTool
 
         #endregion
 
+        // recursivly build hierarchy from transforms
         private static void BuildHierarchy(Transform currentTransform, Dictionary<string, Transform> allTransforms,
             Dictionary<string, GameObject> allGameObjects, int level, StringBuilder hierarchy)
         {
@@ -223,6 +229,8 @@ namespace JBUnityAnalyzerTool
             }
         }
 
+        // this was the hardest part of the assignment, took me a while to figure out how to properly parse C# code and check for usage
+        // this uses Roslyn to parse the C# code, look for Monobehaviour derived classes, and then check if any of the serialized fields are used in the script
         private static async Task<bool> IsScriptUsed(string scriptPath, Component component)
         {
             if (!File.Exists(scriptPath)) return false;
@@ -258,6 +266,7 @@ namespace JBUnityAnalyzerTool
 
     #region Yaml Extensions/Specifiers
 
+    // extension methods for easier YAML parsing
     public static class YamlNodeExtensions
     {
         public static string? GetScalarValue(this YamlMappingNode node, string key)
@@ -286,7 +295,7 @@ namespace JBUnityAnalyzerTool
     }
 
     public class GameObject
-    {
+    { 
         public string Name { get; set; }
     }
 
