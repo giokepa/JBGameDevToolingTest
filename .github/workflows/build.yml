@@ -11,40 +11,43 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '9.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore ./JBUnityAnalyzerTool/JBUnityAnalyzerTool.csproj
+      - name: Restore dependencies
+        run: dotnet restore 
 
-    - name: Build project
-      run: dotnet build ./JBUnityAnalyzerTool/JBUnityAnalyzerTool.csproj -c Release --no-restore
+      - name: Build and publish .exe
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true
+        shell: pwsh
 
-    - name: Publish self-contained EXE
-      run: dotnet publish ./JBUnityAnalyzerTool/JBUnityAnalyzerTool.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true
+      - name: Create tag
+        id: create_tag
+        run: |
+          $tag="v$($env:GITHUB_RUN_NUMBER)"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $tag
+          git push origin $tag
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+        shell: pwsh
 
-    - name: Upload publish folder as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: JBUnityAnalyzerTool
-        path: ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JBUnityAnalyzerTool
+          path: ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/JBUnityAnalyzerTool.exe
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ github.run_number }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload EXE to Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/*.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.create_tag.outputs.tag }}
+          files: ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/JBUnityAnalyzerTool.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
