@@ -20,34 +20,32 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore 
+        run: dotnet restore
 
       - name: Build and publish .exe
         run: |
-          dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true
+          dotnet publish ./JBUnityAnalyzerTool/JBUnityAnalyzerTool.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            /p:PublishSingleFile=true `
+            /p:PublishTrimmed=true
         shell: pwsh
 
-      - name: Create tag
-        id: create_tag
+      - name: Create tag and GitHub release
+        id: tag_release
         run: |
           $tag="v$($env:GITHUB_RUN_NUMBER)"
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag $tag
           git push origin $tag
+          
+          gh release create $tag ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/JBUnityAnalyzerTool.exe `
+            --title "Release $tag" `
+            --notes "Automated release from GitHub Actions"
+          
           echo "tag=$tag" >> $GITHUB_OUTPUT
         shell: pwsh
-
-      - name: Upload exe artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: JBUnityAnalyzerTool
-          path: ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/JBUnityAnalyzerTool.exe
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.create_tag.outputs.tag }}
-          files: ./JBUnityAnalyzerTool/bin/Release/net9.0/win-x64/publish/JBUnityAnalyzerTool.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
