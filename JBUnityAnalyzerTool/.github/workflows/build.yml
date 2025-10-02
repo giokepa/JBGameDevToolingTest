@@ -1,0 +1,38 @@
+name: Build .NET 9 EXE
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Release EXE
+      run: |
+        dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+
+    - name: List files
+      run: dir ./publish
+
+    - name: Upload EXE artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: UnityAnalyzerTool
+        path: ./publish
