@@ -1,4 +1,4 @@
-name: Build .NET 9 EXE
+name: Build and Publish EXE
 
 on:
   push:
@@ -14,25 +14,24 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Setup .NET 9
+    - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: '9.0.x'
 
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build Release EXE
-      run: |
-        dotnet publish -c Release -r win-x64 --self-contained true -o ./publish
+    - name: Build project
+      run: dotnet build --configuration Release
 
-    - name: List files
-      run: dir ./publish
+    - name: Publish EXE
+      run: dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true
 
     - name: Upload EXE artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: UnityAnalyzerTool
-        path: ./publish
+        name: JBUnityAnalyzerTool
+        path: ./bin/Release/net9.0/win-x64/publish/
